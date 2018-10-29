@@ -31,7 +31,7 @@ Mappings:
     ap-south-1:
      AMIID: ami-0912f71e06545ad88
     ap-southeast-1:
-     AMIID: "ami-0fca02518e0faeb84"
+     AMIID: ami-0fca02518e0faeb84
 Resources:
   EC2Instance:
    Type: AWS::EC2::Instance
@@ -45,8 +45,7 @@ Resources:
     SecurityGroupIds: [sg-002fab3389c909677]
     AvailabilityZone: !Ref 'AvailabilityZone'
     UserData:
-        Fn::Base64:
-         Fn::Sub: |
+        Fn::Base64: !Sub |
               #!/bin/bash
               yum install -y httpd;
               echo "<html>My Name is Narendra Singh</html>" > /var/www/html/index.html;
