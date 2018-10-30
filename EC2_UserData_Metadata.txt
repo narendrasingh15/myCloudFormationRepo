@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS CloudFormation Sample Template EC2InstanceWithSecurityGroupSample:
+  Create an Amazon EC2 instance running the Amazon Linux AMI. The AMI is chosen based
+  on the region in which the stack is run. This example creates an EC2 security group
+  for the instance to give you SSH access.'
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+     - t2.micro
+     - m1.small
+     - m1.large
+    Description: Enter t2.micro, m1.small, or m1.large. Default is t2.micro.
+  AvailabilityZone:
+   Type: String
+   Default: ap-south-1a
+   AllowedValues:
+     - ap-south-1a
+     - ap-south-1b
+   Description: AvailabilityZone in which First Instance Will be Launched
+Mappings:
+  AWSRegionToAMI:
+    ap-south-1:
+     AMIID: ami-0912f71e06545ad88
+    ap-southeast-1:
+     AMIID: ami-0fca02518e0faeb84
+Resources:
+  EC2Instance:
+   Type: AWS::EC2::Instance
+   Metadata:
+    AWS::CloudFormation::Init: 
+     config: 
+      packages:
+        yum:
+         httpd: []
+      files:
+       /var/www/html/index.html:
+         content: "<html>My Name is Narendra Singh and this is my First Instance using CloudFormation Metadata</html>"
+         mode: "000644"
+         owner: "root"
+         group: "root"
+      services:
+       sysvinit:
+        httpd:
+         enabled: "true"
+         ensureRunning: "true"
+   Properties:
+    InstanceType: !Ref 'InstanceType'
+    KeyName: !Ref 'KeyName'
+    ImageId: !FindInMap 
+      - AWSRegionToAMI
+      - !Ref 'AWS::Region'
+      - AMIID
+    SecurityGroupIds: [sg-002fab3389c909677]
+    AvailabilityZone: !Ref 'AvailabilityZone'
+    UserData:
+      Fn::Base64:  !Sub |
+       #!/bin/bash
+       yum update -y aws-cfn-bootstrap
+       /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
+Outputs:
+  InstanceId1:
+    Description: InstanceId of the first EC2 instance
+    Value: !Ref 'EC2Instance'
+  PublicIP1:
+    Description: IP of the first EC2 instance
+    Value: !GetAtt [EC2Instance, PublicIp]
+  WebsiteURL:
+   Description: URL to Connect to Website
+   Value: !Sub http://${EC2Instance.PublicIp}
