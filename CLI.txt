@@ -1,0 +1,12 @@
+CloudFormation from CLI:
+
+1. Configure aws cli
+
+2. Command to Create Stack from CLI:
+=======================================
+aws cloudformation create-stack  --stack-name mystack --template-body file:///home/ec2-user/template 
+--parameters ParameterKey=KeyName,ParameterValue=MyKeyPair ParameterKey=InstanceType,ParameterValue=t2.micro
+
+3. Delete Stack from CLI
+======================================
+aws cloudformation delete-stack --stack-name mystack
