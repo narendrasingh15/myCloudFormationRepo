@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS CloudFormation Sample Template'
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+     - t2.micro
+     - m1.small
+     - m1.large
+    Description: Enter t2.micro, m1.small, or m1.large. Default is t2.micro.
+Mappings:
+  AWSRegionToAMI:
+    ap-south-1:
+     AMIID: ami-06bcd1131b2f55803
+    ap-southeast-1:
+     AMIID: ami-0fca02518e0faeb84
+Resources:
+  MyAutoScalingGroup:
+   DependsOn: MyLaunchConfig
+   Type: AWS::AutoScaling::AutoScalingGroup
+   Properties:
+     AutoScalingGroupName: MyAutoScalingGroup
+     AvailabilityZones: !GetAZs ''
+     HealthCheckType: ELB
+     HealthCheckGracePeriod: 90
+     LaunchConfigurationName: !Ref 'MyLaunchConfig'
+     LoadBalancerNames: 
+     - !Ref 'MyElasticLoadBalancer'
+     MaxSize: "1"
+     MinSize: "1"
+  MyLaunchConfig:
+   Type: AWS::AutoScaling::LaunchConfiguration
+   Metadata:
+    AWS::CloudFormation::Init: 
+     config: 
+      packages:
+        yum:
+         httpd: []
+      files:
+       /var/www/html/index.html:
+         content: "<html><h1>My Name is Narendra Singh<br>these are my Instances using CloudFormation Metadata</h1></html>"
+         mode: "000644"
+         owner: "root"
+         group: "root"
+      services:
+       sysvinit:
+        httpd:
+         enabled: "true"
+         ensureRunning: "true"
+   Properties:
+    ImageId: !FindInMap
+      - AWSRegionToAMI
+      - !Ref 'AWS::Region'
+      - AMIID
+    InstanceType: !Ref 'InstanceType'
+    InstanceMonitoring: false
+    LaunchConfigurationName: MylaunchConfig
+    KeyName: !Ref 'KeyName'
+    SecurityGroups: [sg-002fab3389c909677]
+    UserData:
+      Fn::Base64:  !Sub |
+        #!/bin/bash
+        yum update -y aws-cfn-bootstrap
+        /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource MyLaunchConfig --region ${AWS::Region}
+  MyElasticLoadBalancer:
+   Type: AWS::ElasticLoadBalancing::LoadBalancer
+   Properties:
+    AvailabilityZones: !GetAZs ''
+    CrossZone: true
+    Listeners:
+    - InstancePort: '80'
+      LoadBalancerPort: '80'
+      Protocol: HTTP
+    LoadBalancerName: myELB
+    HealthCheck:
+      Target: HTTP:80/
+      HealthyThreshold: '2'
+      UnhealthyThreshold: '3'
+      Interval: '10'
+      Timeout: '5'
+    Scheme: internet-facing
+    SecurityGroups:
+     - sg-002fab3389c909677
+Outputs:
+  WebsiteURL:
+   Description: URL to Connect to Website
+   Value: !Sub http://${MyElasticLoadBalancer.DNSName}
