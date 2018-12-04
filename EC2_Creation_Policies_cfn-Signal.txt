@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS CloudFormation Sample Template EC2InstanceWithSecurityGroupSample:
+  Create an Amazon EC2 instance running the Amazon Linux AMI. The AMI is chosen based
+  on the region in which the stack is run. This example creates an EC2 security group
+  for the instance to give you SSH access.'
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  AvailabilityZone1:
+   Type: String
+   Default: ap-south-1a
+   AllowedValues:
+     - ap-south-1a
+     - ap-south-1b
+   Description: AvailabilityZone in which First Instance Will be Launched
+  AvailabilityZone2:
+   Type: String
+   AllowedValues:
+     - ap-south-1a
+     - ap-south-1b
+   Description: AvailabilityZone in which Second Instance Will be Launched
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+     - t2.micro
+     - m1.small
+     - m1.large
+     - t2.nano
+    Description: Enter t2.micro, m1.small, m1.large or t2.nano. Default is t2.micro.
+Mappings:
+  AWSRegionToAMI:
+    ap-south-1:
+     AMIID: ami-06bcd1131b2f55803
+    ap-southeast-1:
+     AMIID: ami-0fca02518e0faeb84
+Resources:
+  EC2Instance1:
+   Type: AWS::EC2::Instance
+   CreationPolicy:
+     ResourceSignal:    
+      Count: 1
+      Timeout: "PT5M"  
+   Metadata:
+    AWS::CloudFormation::Init: 
+     config: 
+      packages:
+        yum:
+         httpd: []
+      files:
+       /var/www/html/index.html:
+         content: "<html><h1>My Name is Narendra Singh<br>these is my first EC2 Instances using CloudFormation Metadata</h1></html>"
+         mode: "000644"
+         owner: "root"
+         group: "root"
+      services:
+       sysvinit:
+        httpd:
+         enabled: "true"
+         ensureRunning: "true"
+   Properties:
+    InstanceType: !Ref 'InstanceType'
+    KeyName: !Ref 'KeyName'
+    ImageId: !FindInMap 
+      - AWSRegionToAMI
+      - !Ref 'AWS::Region'
+      - AMIID
+    SecurityGroupIds: [sg-002fab3389c909677]
+    AvailabilityZone: !Ref 'AvailabilityZone1'
+    UserData:
+        Fn::Base64: !Sub |
+              #!/bin/bash
+              yum update -y aws-cfn-bootstrap
+              /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource EC2Instance1 --region ${AWS::Region}
+              /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance1 --region ${AWS::Region}
+  EC2Instance2:
+   CreationPolicy:
+     ResourceSignal:    
+      Count: 1
+      Timeout: "PT5M"
+   Metadata:
+    AWS::CloudFormation::Init: 
+     config: 
+      packages:
+        yum:
+         httpd: []
+      files:
+       /var/www/html/index.html:
+         content: "<html><h1>My Name is Narendra Singh<br>these is my second EC2 Instances using CloudFormation Metadata</h1></html>"
+         mode: "000644"
+         owner: "root"
+         group: "root"
+      services:
+       sysvinit:
+        httpd:
+         enabled: "true"
+         ensureRunning: "true"
+   Type: AWS::EC2::Instance
+   Properties:
+    InstanceType: !Ref 'InstanceType'
+    KeyName: !Ref 'KeyName'
+    ImageId: !FindInMap 
+      - AWSRegionToAMI
+      - !Ref 'AWS::Region'
+      - AMIID
+    SecurityGroupIds: [sg-002fab3389c909677]
+    AvailabilityZone: !Ref 'AvailabilityZone2'
+    UserData:
+        Fn::Base64: !Sub |
+              #!/bin/bash
+               yum update -y aws-cfn-bootstrap
+              /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource EC2Instance2 --region ${AWS::Region}
+              /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance2 --region ${AWS::Region}
+  MyElasticLoadBalancer:
+   Type: AWS::ElasticLoadBalancing::LoadBalancer
+   Properties:
+    AvailabilityZones:
+    - ap-south-1a
+    - ap-south-1b
+    CrossZone: true
+    Instances:
+    - !Ref 'EC2Instance1'
+    - !Ref 'EC2Instance2'
+    Listeners:
+    - InstancePort: '80'
+      LoadBalancerPort: '80'
+      Protocol: HTTP
+    LoadBalancerName: myELB
+    HealthCheck:
+      Target: HTTP:80/
+      HealthyThreshold: '2'
+      UnhealthyThreshold: '2'
+      Interval: '10'
+      Timeout: '5'
+    Scheme: internet-facing
+    SecurityGroups:
+     - sg-002fab3389c909677
+Outputs:
+  WebsiteURL:
+   Description: URL to Connect to Website
+   Value: !Sub http://${MyElasticLoadBalancer.DNSName}
