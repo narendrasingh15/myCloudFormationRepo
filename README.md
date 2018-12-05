@@ -1,3 +1,2 @@
 # myCloudFormationRepo
-This Repository is to store my Cloudformation scripts
-For Testing purpose
+This Repository is to store my Cloudformation templates.
