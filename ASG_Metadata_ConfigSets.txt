@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'AWS CloudFormation Sample Template'
+Description: 'AWS CloudFormation Sample Template to Demo variable ConfigSets with Metadata to make Sure Software Installation is done in specific order on EC2 Instance.'
 Parameters:
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
