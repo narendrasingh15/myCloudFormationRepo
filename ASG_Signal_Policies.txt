@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'AWS CloudFormation Sample Template'
+Description: 'AWS CloudFormation Sample Template to demo Creation and Update ASG Policies.Create ASG having Bootstrapped EC2 Instances using cfn-init and Place it Behing an ELB'
 Parameters:
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
