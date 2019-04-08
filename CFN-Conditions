@@ -62,3 +62,7 @@ Outputs:
   PublicIP1:
     Description: IP of the first EC2 instance
     Value: !GetAtt [EC2Instance, PublicIp]
+  BucketName:
+    Condition: CreateProdResources
+    Value: 
+      !Ref narendrasinghbucket
