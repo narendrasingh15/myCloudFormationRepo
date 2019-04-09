@@ -17,6 +17,10 @@ Parameters:
 Resources:
   EC2Instance:
    Type: AWS::EC2::Instance 
+   CreationPolicy:
+    ResourceSignal:    
+     Count: 1
+     Timeout: "PT10M"
    Properties:
     InstanceType: !Ref 'InstanceType'
     KeyName: !Ref 'KeyName'
@@ -34,6 +38,7 @@ Resources:
               chmod 755 index.html;
               service httpd start;
               chkconfig httpd on;
+              /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EC2Instance --region ${AWS::Region}
 Outputs:
   InstanceId1:
     Description: InstanceId of the first EC2 instance
